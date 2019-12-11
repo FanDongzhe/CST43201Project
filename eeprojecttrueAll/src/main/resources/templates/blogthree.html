@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>唠叨铺 | 杂货铺</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/css/lightbox.css" rel="stylesheet">
+    <link href="/css/animate.min.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/responsive.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+    <script src="/js/html5shiv.js"></script>
+    <script src="/js/respond.min.js"></script>
+    <![endif]-->
+    <link rel="shortcut icon" href="/images/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="/images/ico/apple-touch-icon-57-precomposed.png">
+    <script type="text/javascript" src="/js/jquery.js"></script>
+    <script th:inline="javascript">
+
+        var times=true;
+        function myFunction() {
+            var x = document.getElementById("search_text");
+        }
+
+        function myFunction_run() {
+            var x = document.getElementById("search_text");
+            if(!times) {
+                window:location.href = "/MomentGetByContent?content=" + x.value;
+                times=true;
+            }else
+                times=false
+        }
+        var flag=true;
+        function reImg(id) {
+        var con="#searchSurname"+(id+1);
+        var img = document.getElementById("like" + id);
+        var awe= document.getElementById("I_awe" + id);
+        if(flag)
+        {$.get("/MomentAwesome",{moment_id : id},function(data){
+            img.src="/images/2.png";
+            awe.text=data;
+            flag=false;
+        });}
+        else
+        {
+            $.get("/MomentAwesome_sub",{moment_id : id},function(data){
+                img.src="/images/1.png";
+                awe.text=data;
+                flag=true;
+            });
+
+        }
+
+    }
+    </script>
+</head>
+
+<body>
+<div id="bubble">
+<script>
+
+    class BGBubble {
+        constructor(opts) {
+            this.defaultOpts = {
+                id: '',                           //容器ID
+                num: 15,                        // 个数
+                start_probability: 0.1,          // 如果数量小于num，有这些几率添加一个新的
+                radius_min: 1,                   // 初始半径最小值
+                radius_max: 2,                   // 初始半径最大值
+                radius_add_min: .3,               // 半径增加最小值
+                radius_add_max: .5,               // 半径增加最大值
+                opacity_min: 0.2,                 // 初始透明度最小值
+                opacity_max: 0.3,                // 初始透明度最大值
+                opacity_prev_min: .003,            // 透明度递减值最小值
+                opacity_prev_max: .005,            // 透明度递减值最大值
+                light_min: 40,                 // 颜色亮度最小值
+                light_max: 70,                 // 颜色亮度最大值
+                is_same_color: false          //泡泡颜色是否相同
+            }
+            if (Object.prototype.toString.call(opts) == "[object Object]") {
+                this.userOpts = {...this.defaultOpts, ...opts}
+            } else {
+                this.userOpts = {...this.defaultOpts, id: opts}
+            }
+            this.color = this.random(0, 360)
+            this.bubbleNum = []
+            this.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
+            this.cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame
+        }
+
+        random(a, b) {
+            return Math.random() * (b - a) + a    //取a-b之间的随机值
+        }
+
+        initBubble(color, isSameColor) {
+            const width = window.innerWidth
+            const height = window.innerHeight
+            const userOpts = this.userOpts
+            const light = this.random(userOpts.light_min, userOpts.light_max)
+            this.bubble = {
+                x: this.random(0, width),
+                y: this.random(0, height),
+                radius: this.random(userOpts.radius_min, userOpts.radius_max),
+                radiusChange: this.random(userOpts.radius_add_min, userOpts.radius_add_max),
+                opacity: this.random(userOpts.opacity_min, userOpts.opacity_max),
+                opacityChange: this.random(userOpts.opacity_prev_min, userOpts.opacity_prev_max),
+                light,
+                color: `hsl(${isSameColor ? color : this.random(0, 360)},100%,${light}%)`,
+            }
+        }
+
+        bubbling(ctx, color, isSameColor) {
+            !this.bubble && this.initBubble(color, isSameColor)
+            const bubble = this.bubble
+            ctx.fillStyle = bubble.color;
+            ctx.globalAlpha = bubble.opacity;
+            ctx.beginPath();
+            ctx.arc(bubble.x, bubble.y, bubble.radius, 0, 2 * Math.PI, true);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            bubble.opacity -= bubble.opacityChange;
+            bubble.radius += bubble.radiusChange;
+            if (bubble.opacity <= 0) {
+                this.initBubble(color, isSameColor)
+                return
+            }
+        }
+
+        createCanvas() {
+            this.canvas = document.createElement('canvas')
+            this.ctx = this.canvas.getContext('2d')
+            this.canvas.style.display = 'block'        //防止全屏的canvas出现滚动条
+            this.canvas.width = window.innerWidth
+            this.canvas.height = window.innerHeight
+            this.canvas.style.position = 'fixed'
+            this.canvas.style.top = '0'
+            this.canvas.style.left = '0'
+            this.canvas.style.zIndex = '-1'
+            var con_color='#FFFFFF';
+            document.getElementById(this.userOpts.id).appendChild(this.canvas)
+            window.onresize = () => {
+                this.canvas.width = window.innerWidth
+                this.canvas.height = window.innerHeight
+            }
+        }
+
+        start() {
+            const width = window.innerWidth
+            const height = window.innerHeight
+            this.color += 0.1
+            // this.ctx.fillStyle = `hsl(${this.color},100%,97%)`
+            this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            this.ctx.fillRect(0, 0, width, height);
+            if (this.bubbleNum.length < this.userOpts.num && Math.random() < this.userOpts.start_probability) {
+                this.bubbleNum.push(new BGBubble())
+            }
+            this.bubbleNum.forEach(bubble => bubble.bubbling(this.ctx, this.color, this.userOpts.is_same_color))
+            const requestAnimationFrame = this.requestAnimationFrame
+            this.myReq = requestAnimationFrame(() => this.start())   //新的动画API可根据浏览设置最佳动画间隔时间
+        }
+
+        destory() {
+            const cancelAnimationFrame = this.cancelAnimationFrame
+            cancelAnimationFrame(this.myReq)
+            window.onresize = null
+        }
+
+    }
+
+    var bubbleDemo = new BGBubble('bubble')
+    bubbleDemo.createCanvas()
+    bubbleDemo.start()
+
+</script>
+</div>
+<header id="header">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 overflow">
+                <div class="social-icons pull-right">
+                    <ul class="nav nav-pills">
+                        <li><a href=""><i class="fa fa-facebook"></i></a></li>
+                        <li><a href=""><i class="fa fa-twitter"></i></a></li>
+                        <li><a href=""><i class="fa fa-google-plus"></i></a></li>
+                        <li><a href=""><i class="fa fa-dribbble"></i></a></li>
+                        <li><a href=""><i class="fa fa-linkedin"></i></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="navbar navbar-inverse" role="banner">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <a class="navbar-brand" href="index.html">
+                    <h1><img src="/images/logo.png" alt="logo"></h1>
+                </a>
+
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="index.html">主页</a></li>
+                    <li class="dropdown"><a href="#">杂货小铺 <i class="fa fa-angle-down"></i></a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="second-hand.html">赏脸看看</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown active"><a href="#">唠叨茶馆 <i class="fa fa-angle-down"></i></a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="blogthree.html">唠两句呗</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#">关于我们<i class="fa fa-angle-down"></i></a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="portfolio.html">了解一下？</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#">我的</a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="/issue">我的忘忧小屋</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div class="search">
+                <form role="form">
+                    <i class="fa fa-search" onclick="myFunction_run()"></i>
+                    <div class="field-toggle">
+                        <input type="text" class="search-form" autocomplete="off" placeholder="Search" id="search_text"
+                               onclick="myFunction()">
+                        <div id="result_search">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</header>
+
+
+<section id="action" class="responsive">
+<div class="vertical-center">
+    <div class="container">
+        <div class="row">
+            <div class="action take-tour">
+                <div class="col-sm-7 wow fadeInLeft" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <h1 class="title">唠碎嗑</h1>
+                    <p>未来 &amp; 热爱 &amp; 生活</p>
+                </div>
+                <div class="col-sm-5 text-center wow fadeInRight" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <div class="tour-button">
+                        <a href="/newmoment" class="btn btn-common">唠个五块钱的</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</section>
+<!--<section id="page-breadcrumb">-->
+    <!--<div class="vertical-center sun">-->
+        <!--<div class="container">-->
+            <!--<div class="row">-->
+                <!--&lt;!&ndash;<div class="action">&ndash;&gt;-->
+                    <!--&lt;!&ndash;<div class="col-sm-12">&ndash;&gt;-->
+                        <!--&lt;!&ndash;<h1 class="title">杂货铺</h1>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<a href="/newmoment">新唠叨</a>&ndash;&gt;-->
+                    <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                <!--<div class="action take-tour">-->
+                    <!--<div class="col-sm-7 wow fadeInLeft" data-wow-duration="500ms" data-wow-delay="300ms">-->
+                        <!--<h1 class="title">唠碎嗑</h1>-->
+                        <!--<p>未来 &amp; 热爱 &amp; 生活</p>-->
+                    <!--</div>-->
+                    <!--<div class="col-sm-5 text-center wow fadeInRight" data-wow-duration="500ms" data-wow-delay="300ms">-->
+                        <!--<div class="tour-button">-->
+                            <!--<a href="/newmoment" class="btn btn-common">唠叨一下啊</a>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                <!--</div>-->
+            <!--</div>-->
+        <!--</div>-->
+    <!--</div>-->
+<!--</section>-->
+<!--&lt;!&ndash;/#action&ndash;&gt;-->
+
+<section id="blog" class="padding-top">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 col-sm-5">
+                <div class="sidebar blog-sidebar">
+                    <div class="sidebar-item  recent">
+                        <h3>选择</h3>
+                        <div class="media">
+                            <div class="pull-left">
+                                <a href="/newmoment/day"><img src="/images/1.png" alt="" width="52px" height="52px"></a>
+                            </div>
+                            <div class="media-body">
+                                <h4><a href="/newmoment/day">最近二十四小时</a></h4>
+                                <p>新唠叨</p>
+                            </div>
+                        </div>
+                        <div class="media">
+                            <div class="pull-left">
+                                <a href="/newmoment/week"><img src="/images/2.png" alt=""  width="52px" height="52px"></a>
+                            </div>
+                            <div class="media-body">
+                                <h4><a href="/newmoment/week">最近一周</a></h4>
+                                <p>唠叨壳</p>
+                            </div>
+                        </div>
+                        <div class="media">
+                            <div class="pull-left">
+                                <a href="/newmoment/month"><img src="/images/3.png" a alt=""  width="52px" height="52px"></a>
+                            </div>
+                            <div class="media-body">
+                                <h4><a href="/newmoment/month">最近一个月</a></h4>
+                                <p>唠叨沫</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sidebar-item categories">
+                        <h3>随便逛逛</h3>
+                        <ul class="nav navbar-stacked">
+                            <li><a href="#">赚点外快<span class="pull-right">(1)</span></a></li>
+                            <li class="active"><a href="second-hand.html">杂货铺<span class="pull-right">(8)</span></a></li>
+                            <li><a href="/issue">我的小屋<span class="pull-right">(4)</span></a></li>
+                        </ul>
+                    </div>
+                    <div class="sidebar-item tag-cloud">
+                        <h3>标签</h3>
+                        <ul class="nav nav-pills">
+                            <li><a th:href="@{/MomentGetByTag(tag='开心')}">开心</a></li>
+                            <li><a th:href="@{/MomentGetByTag(tag='糗事')}">糗事</a></li>
+                            <li><a th:href="@{/MomentGetByTag(tag='郁闷')}">郁闷</a></li>
+                            <li><a th:href="@{/MomentGetByTag(tag='幸福')}">幸福</a></li>
+                            <li><a th:href="@{/MomentGetByTag(tag='梦想')}">梦想</a></li>
+                            <li><a th:href="@{/MomentGetByTag(tag='未来')}">未来</a></li>
+                            <li><a th:href="@{/MomentGetByLike}">相似</a></li>
+                            <li><a th:href="@{/blogthree}">所有</a></li>
+                        </ul>
+                    </div>
+                    <div class="sidebar-item popular">
+                        <h3>唠叨婆婆榜</h3>
+                        <ul class="gallery"  th:each="img_i : ${img}">
+                            <li><a href="#"><img th:src="@{/Customer/image/get(id=${{img_i}})}"
+                                                  id="newest_img" alt=""></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-9 col-sm-7">
+                <div class="row">
+                    <div class="col-md-12 col-sm-12">
+                        <div class="single-blog two-column">
+                            <div class="post-content clearfix" th:each="item2 : ${data}">
+                                <!--<div class="post-thumb-head">-->
+                                    <!--<img th:src="@{/Customer/image/get(id=${{item2.customer_id}})}"-->
+                                         <!--class="img-responsive"-->
+                                         <!--alt="" th::text="hhhhhh">-->
+                                <!--</div>-->
+                                <div class="vertical-center">
+                                    <div class="container">
+                                        <div class="row">
+                                            <div class="action take-tour">
+                                                <div class="col-sm-3 wow fadeInLeft"
+                                                     data-wow-duration="500ms"
+                                                     data-wow-delay="300ms">
+                                                    <div class="post-thumb-head">
+                                                        <img th:src="@{/Customer/image/get(id=${{item2.customer_id}})}"
+                                                             class="img-responsive"
+                                                             alt="">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-sm-3 wow fadeInRight" data-wow-duration="500ms"
+                                                     data-wow-delay="300ms">
+                                                    <h1 class="title"  th:text="${{item2.name}}"></h1>
+                                                    <!--<p>未来 &amp; 热爱 &amp; 生活</p>-->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--<h2 class="post-title bold" th:text="${{item2.name}}"></h2>-->
+                                <h2 class="post-title bold"></h2>
+                                    <div class="post-content clearfix">
+                                        <div class="post-thumb-content">
+                                            <img th:src="@{/Moment/image/get(id=${{item2.id}})}" class="img-responsive"
+                                                 alt="">
+                                            <div class="post-overlay">
+                                                <span class="uppercase"><a id="comment-content-hide-size" th:text="${{item2.tag}}"></a></span>
+                                            </div>
+                                        </div>
+                                        <h3 class="post-author" th:text="${{item2.date}}"></h3>
+                                        <p><a th:text="${{item2.content}}"></a></p>
+                                        <a th:href="@{/detail(moment_id=${{item2.id}})}" class="read-more"
+                                           methods="post">View
+                                            More</a>
+                                        <div class="post-bottom clearfix">
+                                            <div class="demo">
+                                            <ul class="nav navbar-nav post-nav">
+                                                <li>
+                                                    <a th:href="@{/Moment/get(id=${{item2.id}})}">
+                                                    <i class="fa fa-tag"></i>
+                                                    <span class="post-author" th:text="${{item2.tag}}">
+                                                    </span>
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <!--<a th:href="@{/Moment/get(id=${{item2.id}})}"><i-->
+                                                            <!--class="fa fa-heart"></i>-->
+                                                    <!--</a>-->
+                                                    <ul>
+                                                        <li><a ><img
+                                                                th:id="'like' + ${{item2.id}}"
+                                                                     src="/images/1.png" title="收藏"  height="15"
+                                                                     width="15"
+                                                                     th:onclick="|reImg(${item2.id})|">
+                                                            <a th:id="'I_awe'+${{item2.id}}"
+                                                               th:text="${{item2.awesome}}"></a></a></li>
+                                                    </ul>
+                                                    <!--<div class="teacher-list-love"><span th:onclick="plus()">25</span></div>-->
+                                                    <!--<button  th:text="${{item2.awesome}}" th:onclick="plus()">-->
+                                                    <!--</button>-->
+                                                </li>
+                                                <li>
+                                                    <a th:href="@{/Moment/get(id=${{item2.id}})}" ><i class="fa fa-comments"></i>
+                                                    <span class="post-author" th:text="私聊">
+                                                    </span>
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                            </div>
+                                        </div>
+                                        <form th:action="@{/newcomment(moment_id=${{item2.id}})}" method="post">
+                                            <input name="content" class="form-control"/><br/>
+                                            <input type="submit" class="btn btn-submit" value="评论">
+                                        </form>
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="blog-pagination">
+                    <ul class="pagination" >
+                        <li><a href="#">left</a></li>
+                        <li><a th:href="@{/Moment/page/0}">1</a></li>
+                        <li><a th:href="@{/Moment/page/1}">2</a></li>
+                        <!--<li class="active"><a th:href="@{/Moment/page/2}">3</a></li>-->
+                        <li><a th:href="@{/Moment/page/2}">3</a></li>
+                        <li><a th:href="@{/Moment/page/3}">4</a></li>
+                        <li><a th:href="@{/Moment/page/4}">5</a></li>
+                        <li><a th:href="@{/Moment/page/5}">6</a></li>
+                        <li><a th:href="@{/Moment/page/6}">7</a></li>
+                        <li><a th:href="@{/Moment/page/7}">8</a></li>
+                        <li><a th:href="@{/Moment/page/8}">9</a></li>
+                        <li><a href="#">right</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--/#blog-->
+
+<footer id="footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3 col-sm-6">
+                <div class="contact-info bottom">
+                    <button value="哈哈哈"></button>
+                </div>
+            </div>
+            <div class="col-md-4 col-sm-12">
+                <div class="contact-form bottom">
+                        <div class="form-group">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<!--/#footer-->
+
+
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/js/lightbox.min.js"></script>
+<script type="text/javascript" src="/js/wow.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+</body>
+</html>

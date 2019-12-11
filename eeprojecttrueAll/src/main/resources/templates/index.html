@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Home | Triangle</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/css/animate.min.css" rel="stylesheet">
+    <link href="/css/lightbox.css" rel="stylesheet">
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/responsive.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+    <script src="/js/html5shiv.js"></script>
+    <script src="/js/respond.min.js"></script>
+    <![endif]-->
+    <link rel="shortcut icon" href="/images/ico/favicon.ico">
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/ico/apple-touch-icon-144-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/ico/apple-touch-icon-114-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/ico/apple-touch-icon-72-precomposed.png">
+    <link rel="apple-touch-icon-precomposed" href="/images/ico/apple-touch-icon-57-precomposed.png">
+</head><!--/head-->
+
+<body>
+<div id="bubble">
+    <script>
+
+        class BGBubble {
+            constructor(opts) {
+                this.defaultOpts = {
+                    id: '',                           //容器ID
+                    num: 15,                        // 个数
+                    start_probability: 0.1,          // 如果数量小于num，有这些几率添加一个新的
+                    radius_min: 1,                   // 初始半径最小值
+                    radius_max: 2,                   // 初始半径最大值
+                    radius_add_min: .3,               // 半径增加最小值
+                    radius_add_max: .5,               // 半径增加最大值
+                    opacity_min: 0.2,                 // 初始透明度最小值
+                    opacity_max: 0.3,                // 初始透明度最大值
+                    opacity_prev_min: .003,            // 透明度递减值最小值
+                    opacity_prev_max: .005,            // 透明度递减值最大值
+                    light_min: 40,                 // 颜色亮度最小值
+                    light_max: 70,                 // 颜色亮度最大值
+                    is_same_color: false          //泡泡颜色是否相同
+                }
+                if (Object.prototype.toString.call(opts) == "[object Object]") {
+                    this.userOpts = {...this.defaultOpts, ...opts}
+                } else {
+                    this.userOpts = {...this.defaultOpts, id: opts}
+                }
+                this.color = this.random(0, 360)
+                this.bubbleNum = []
+                this.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                    window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
+                this.cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame
+            }
+
+            random(a, b) {
+                return Math.random() * (b - a) + a    //取a-b之间的随机值
+            }
+
+            initBubble(color, isSameColor) {
+                const width = window.innerWidth
+                const height = window.innerHeight
+                const userOpts = this.userOpts
+                const light = this.random(userOpts.light_min, userOpts.light_max)
+                this.bubble = {
+                    x: this.random(0, width),
+                    y: this.random(0, height),
+                    radius: this.random(userOpts.radius_min, userOpts.radius_max),
+                    radiusChange: this.random(userOpts.radius_add_min, userOpts.radius_add_max),
+                    opacity: this.random(userOpts.opacity_min, userOpts.opacity_max),
+                    opacityChange: this.random(userOpts.opacity_prev_min, userOpts.opacity_prev_max),
+                    light,
+                    color: `hsl(${isSameColor ? color : this.random(0, 360)},100%,${light}%)`,
+                }
+            }
+
+            bubbling(ctx, color, isSameColor) {
+                !this.bubble && this.initBubble(color, isSameColor)
+                const bubble = this.bubble
+                ctx.fillStyle = bubble.color;
+                ctx.globalAlpha = bubble.opacity;
+                ctx.beginPath();
+                ctx.arc(bubble.x, bubble.y, bubble.radius, 0, 2 * Math.PI, true);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                bubble.opacity -= bubble.opacityChange;
+                bubble.radius += bubble.radiusChange;
+                if (bubble.opacity <= 0) {
+                    this.initBubble(color, isSameColor)
+                    return
+                }
+            }
+
+            createCanvas() {
+                this.canvas = document.createElement('canvas')
+                this.ctx = this.canvas.getContext('2d')
+                this.canvas.style.display = 'block'        //防止全屏的canvas出现滚动条
+                this.canvas.width = window.innerWidth
+                this.canvas.height = window.innerHeight
+                this.canvas.style.position = 'fixed'
+                this.canvas.style.top = '0'
+                this.canvas.style.left = '0'
+                this.canvas.style.zIndex = '-1'
+                var con_color='#FFFFFF';
+                document.getElementById(this.userOpts.id).appendChild(this.canvas)
+                window.onresize = () => {
+                    this.canvas.width = window.innerWidth
+                    this.canvas.height = window.innerHeight
+                }
+            }
+
+            start() {
+                const width = window.innerWidth
+                const height = window.innerHeight
+                this.color += 0.1
+                // this.ctx.fillStyle = `hsl(${this.color},100%,97%)`
+                this.ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                this.ctx.fillRect(0, 0, width, height);
+                if (this.bubbleNum.length < this.userOpts.num && Math.random() < this.userOpts.start_probability) {
+                    this.bubbleNum.push(new BGBubble())
+                }
+                this.bubbleNum.forEach(bubble => bubble.bubbling(this.ctx, this.color, this.userOpts.is_same_color))
+                const requestAnimationFrame = this.requestAnimationFrame
+                this.myReq = requestAnimationFrame(() => this.start())   //新的动画API可根据浏览设置最佳动画间隔时间
+            }
+
+            destory() {
+                const cancelAnimationFrame = this.cancelAnimationFrame
+                cancelAnimationFrame(this.myReq)
+                window.onresize = null
+            }
+
+        }
+
+        var bubbleDemo = new BGBubble('bubble')
+        bubbleDemo.createCanvas()
+        bubbleDemo.start()
+
+
+        window.onload = function()
+        {
+            document.body.bgColor = "#000";
+            //定时器开关
+            window.setInterval("start2()",5000);
+        }
+
+
+
+        function start2()
+        {
+            //创建图片节点
+            var imgObj = document.createElement("img");
+            //追加到body节点
+            document.body.appendChild(imgObj);
+            //添加src属性
+            imgObj.setAttribute("src","images/3.png");
+            //添加width属性
+            var imgWidth = getRandom(15,30);
+            imgObj.setAttribute("width",imgWidth);
+            //添加style属性
+            var winWidth = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth;
+            var winHeight = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight;
+            var x = getRandom(0,winWidth);
+            var y = getRandom(0,winHeight);
+            imgObj.setAttribute("style","position:absolute;left:"+x+"px;top:"+y+"px");
+            //单击删除星星
+            imgObj.setAttribute("onclick","removeImg(this)");
+        }
+        function removeImg(imgObj)
+        {
+            //删除子节点img
+            document.body.removeChild(imgObj);
+        }
+        function getRandom(min,max)
+        {
+            var random = Math.random()*(max-min)+min;
+            //向下取整
+            random = Math.floor(random);
+            //返回值
+            return random;
+        }
+    </script>
+</div>
+
+
+<header id="header">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 overflow">
+                <div class="social-icons pull-right">
+                    <ul class="nav nav-pills">
+                        <li><a href=""><i class="fa fa-facebook"></i></a></li>
+                        <li><a href=""><i class="fa fa-twitter"></i></a></li>
+                        <li><a href=""><i class="fa fa-google-plus"></i></a></li>
+                        <li><a href=""><i class="fa fa-dribbble"></i></a></li>
+                        <li><a href=""><i class="fa fa-linkedin"></i></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="navbar navbar-inverse" role="banner">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <a class="navbar-brand" href="index.html">
+                    <h1><img src="/images/logo.png" alt="logo"></h1>
+                </a>
+
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="index.html">主页</a></li>
+                    <li class="dropdown"><a href="#">杂货小铺 <i class="fa fa-angle-down"></i></a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="second-hand.html">赏脸看看</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown active"><a href="#">唠叨茶馆 <i class="fa fa-angle-down"></i></a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="blogthree.html">唠两句呗</a></li>
+                        </ul>
+                    </li>
+                    <li class="dropdown"><a href="#">关于我们<i class="fa fa-angle-down"></i></a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="portfolio.html">了解一下？</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#">我的</a>
+                        <ul role="menu" class="sub-menu">
+                            <li><a href="/issue">我的忘忧小屋</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+            <div class="search">
+                <form role="form">
+                    <i class="fa fa-search"></i>
+                    <div class="field-toggle">
+                        <input type="text" class="search-form" autocomplete="off" placeholder="Search">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</header>
+<!--/#header-->
+
+<section id="home-slider">
+    <div class="container">
+        <div class="row">
+            <div class="main-slider">
+                <div class="slide-text">
+                    <h1>解忧杂货铺</h1>
+                    <p>Boudin doner frankfurter pig. Cow shank bresaola pork loin tri-tip tongue venison pork belly
+                        meatloaf short loin landjaeger biltong beef ribs shankle chicken andouille.</p>
+                    <!--<a href="/signup" class="btn btn-common">SIGN UP</a>-->
+                    <div  th:switch="${user}">
+                        <div th:case="null">
+                            <a href="/login" class="btn btn-common" th:text="'HELLO, ' + 'PLEASE LOGIN' + '!'"></a>
+                        </div>
+                        <div  th:case="*">
+                            <p class="btn btn-common" th:text="'HELLO, ' + ${user} + '!'"></p>
+                            <a href="/logout" class="btn btn-common" th:text="'退出'"></a>
+                        </div>
+                    </div>
+                </div>
+                <img src="/images/home/slider/hill.png" class="slider-hill" alt="slider image">
+                <img src="/images/home/slider/house.png" class="slider-house" alt="slider image">
+                <img src="/images/home/slider/sun.png" class="slider-sun" alt="slider image">
+                <img src="/images/home/slider/birds1.png" class="slider-birds1" alt="slider image">
+                <img src="/images/home/slider/birds2.png" class="slider-birds2" alt="slider image">
+            </div>
+        </div>
+    </div>
+    <div class="preloader"><i class="fa fa-sun-o fa-spin"></i></div>
+</section>
+<!--/#home-slider-->
+
+<section id="services">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-4 text-center padding wow fadeIn" data-wow-duration="1000ms" data-wow-delay="300ms">
+                <div class="single-service">
+                    <div class="wow scaleIn" data-wow-duration="500ms" data-wow-delay="300ms">
+                        <img src="/images/home/icon1.png" alt="">
+                    </div>
+                   <h2><a href="second-hand.html">杂货小铺</a></h2>
+                    <p>你想的，这里都有</p>
+                </div>
+            </div>
+            <div class="col-sm-4 text-center padding wow fadeIn" data-wow-duration="1000ms" data-wow-delay="600ms">
+                <div class="single-service">
+                    <div class="wow scaleIn" data-wow-duration="500ms" data-wow-delay="600ms">
+                        <img src="/images/home/icon2.png" alt="">
+                    </div>
+                    <h2><a href="blogthree.html">唠嗑小地</a></h2>
+                    <p>往前一步是幸福</p>
+                </div>
+            </div>
+            <div class="col-sm-4 text-center padding wow fadeIn" data-wow-duration="1000ms" data-wow-delay="900ms">
+                <div class="single-service">
+                    <div class="wow scaleIn" data-wow-duration="500ms" data-wow-delay="900ms">
+                        <img src="/images/home/icon3.png" alt="">
+                    </div>
+                    <h2><a href="portfoliotwo.html">劳务工厂</a></h2>
+                    <p>你帮我帮大家帮</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--/#services-->
+
+<section id="action" class="responsive">
+    <div class="vertical-center">
+        <div class="container">
+            <div class="row">
+                <div class="action take-tour">
+                    <div class="col-sm-7 wow fadeInLeft" data-wow-duration="500ms" data-wow-delay="300ms">
+                        <h1 class="title">解忧杂货铺</h1>
+                        <p>未来 &amp; 热爱 &amp; 生活</p>
+                    </div>
+                    <div class="col-sm-5 text-center wow fadeInRight" data-wow-duration="500ms" data-wow-delay="300ms">
+                        <div class="tour-button">
+                            <a href="#" class="btn btn-common">TAKE THE TOUR</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--/#action-->
+
+<section id="features">
+    <div class="container">
+        <div class="row">
+            <div class="single-features">
+                <div class="col-sm-5 wow fadeInLeft" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <img src="/images/home/image1.png" class="img-responsive" alt="">
+                </div>
+                <div class="col-sm-6 wow fadeInRight" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <h2>朋友</h2>
+                    <P>缘分是本书，翻的不经意会错过，读得太认真会泪流。</P>
+                </div>
+            </div>
+            <div class="single-features">
+                <div class="col-sm-6 col-sm-offset-1 align-right wow fadeInLeft" data-wow-duration="500ms"
+                     data-wow-delay="300ms">
+                    <h2>解忧</h2>
+                    <P>如果你要做一件事，不要到处宣扬自己的想法，只管安安静静的去做，值不值，时间是做好的证明，自己的人生，得自己负责。</P>
+                </div>
+                <div class="col-sm-5 wow fadeInRight" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <img src="/images/home/image2.png" class="img-responsive" alt="">
+                </div>
+            </div>
+            <div class="single-features">
+                <div class="col-sm-5 wow fadeInLeft" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <img src="/images/home/image3.png" class="img-responsive" alt="">
+                </div>
+                <div class="col-sm-6 wow fadeInRight" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <h2>杂货</h2>
+                    <P> 魔道解忧杂货铺 一件心事，一个自己难以忘却的忧愁。在这里，只愿你寻找到那个你想要的答案</P>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--/#features-->
+
+<section id="clients">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="clients text-center wow fadeInUp" data-wow-duration="500ms" data-wow-delay="300ms">
+                    <p><img src="/images/home/clients.png" class="img-responsive" alt=""></p>
+                    <h1 class="title">Happy Clients</h1>
+                    <p>生命拥有比我们想象更大的空间，可以容纳更多不同的东西。</p>
+                </div>
+                <div class="clients-logo wow fadeIn" data-wow-duration="1000ms" data-wow-delay="600ms">
+                    <div class="col-xs-3 col-sm-2">
+                        <a href="#"><img src="/images/home/client1.png" class="img-responsive" alt=""></a>
+                    </div>
+                    <div class="col-xs-3 col-sm-2">
+                        <a href="#"><img src="/images/home/client2.png" class="img-responsive" alt=""></a>
+                    </div>
+                    <div class="col-xs-3 col-sm-2">
+                        <a href="#"><img src="/images/home/client3.png" class="img-responsive" alt=""></a>
+                    </div>
+                    <div class="col-xs-3 col-sm-2">
+                        <a href="#"><img src="/images/home/client4.png" class="img-responsive" alt=""></a>
+                    </div>
+                    <div class="col-xs-3 col-sm-2">
+                        <a href="#"><img src="/images/home/client5.png" class="img-responsive" alt=""></a>
+                    </div>
+                    <div class="col-xs-3 col-sm-2">
+                        <a href="#"><img src="/images/home/client6.png" class="img-responsive" alt=""></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!--/#clients-->
+
+<!--<footer id="footer">-->
+    <!--<div class="container">-->
+        <!--<div class="row">-->
+            <!--<div class="col-sm-12 text-center bottom-separator">-->
+                <!--<img src="/images/home/under.png" class="img-responsive inline" alt="">-->
+            <!--</div>-->
+            <!--<div class="col-md-4 col-sm-6">-->
+                <!--<div class="testimonial bottom">-->
+                    <!--<h2>前进</h2>-->
+                    <!--<div class="media">-->
+                        <!--<div class="pull-left">-->
+                            <!--<a href="#"><img src="/images/home/profile1.png" alt=""></a>-->
+                        <!--</div>-->
+                        <!--<div class="media-body">-->
+                            <!--<blockquote>道路险阻，爱是无畏，所有的汗水和足迹都不会被辜负。</blockquote>-->
+                            <!--<h3><a href="#">- CquErs</a></h3>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                    <!--<div class="media">-->
+                        <!--<div class="pull-left">-->
+                            <!--<a href="#"><img src="/images/home/profile2.png" alt=""></a>-->
+                        <!--</div>-->
+                        <!--<div class="media-body">-->
+                            <!--<blockquote>如有建议，请邮件与我们联系</blockquote>-->
+                            <!--<h3><a href="">- CquErs</a></h3>-->
+                        <!--</div>-->
+                    <!--</div>-->
+                <!--</div>-->
+            <!--</div>-->
+            <!--<div class="col-md-3 col-sm-6">-->
+                <!--<div class="contact-info bottom">-->
+                    <!--<h2>Contacts</h2>-->
+                    <!--<address>-->
+                        <!--E-mail: <a href="Javaee_01@edu.cqu.cn">Javaee_01@edu.cqu.cn</a> <br>-->
+                        <!--Phone: +1 (123) 456 7890 <br>-->
+                        <!--Fax: +1 (123) 456 7891 <br>-->
+                    <!--</address>-->
+
+                    <!--<h2>Address</h2>-->
+                    <!--<address>-->
+                        <!--重庆市 <br>-->
+                        <!--沙坪坝区 <br>-->
+                        <!--沙正街<br>-->
+                        <!--重庆大学A区<br>-->
+                    <!--</address>-->
+                <!--</div>-->
+            <!--</div>-->
+            <!--<div class="col-md-4 col-sm-12">-->
+                <!--<div class="contact-form bottom">-->
+                    <!--<h2>Send a message</h2>-->
+                    <!--<form id="main-contact-form" name="contact-form" method="post" action="sendemail.php">-->
+                        <!--<div class="form-group">-->
+                            <!--<input type="text" name="name" class="form-control" required="required" placeholder="Name">-->
+                        <!--</div>-->
+                        <!--<div class="form-group">-->
+                            <!--<input type="email" name="email" class="form-control" required="required"-->
+                                   <!--placeholder="Email Id">-->
+                        <!--</div>-->
+                        <!--<div class="form-group">-->
+                            <!--<textarea name="message" id="message" required="required" class="form-control" rows="8"-->
+                                      <!--placeholder="Your text here"></textarea>-->
+                        <!--</div>-->
+                        <!--<div class="form-group">-->
+                            <!--<input type="submit" name="submit" class="btn btn-submit" value="Submit">-->
+                        <!--</div>-->
+                    <!--</form>-->
+                <!--</div>-->
+            <!--</div>-->
+            <!--<div class="col-sm-12">-->
+                <!--<div class="copyright-text text-center">-->
+                    <!--<p>&copy; Yotta Company 2019. All Rights Reserved.</p>-->
+                    <!--<p>Designed by <a target="_blank" href="https://www.yotta.club">Yotta</a></p>-->
+                <!--</div>-->
+            <!--</div>-->
+        <!--</div>-->
+    <!--</div>-->
+<!--</footer>-->
+<!--/#footer-->
+
+<script type="text/javascript" src="/js/jquery.js"></script>
+<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="/js/lightbox.min.js"></script>
+<script type="text/javascript" src="/js/wow.min.js"></script>
+<script type="text/javascript" src="/js/main.js"></script>
+</body>
+</html>
